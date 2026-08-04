@@ -37,13 +37,16 @@ exports.getPackageById = async (req, res) => {
 // @access Private/Admin
 exports.createPackage = async (req, res) => {
   try {
-    let imageUrl = req.body.image;
-    if (req.file) {
-      imageUrl = req.file.path || `/uploads/${req.file.filename}`;
+    let imageUrl = req.body.image || req.body.imageUrl || req.body.url;
+    if (req.files && req.files.length > 0) {
+      const file = req.files[0];
+      imageUrl = file.path || (file.filename ? `/uploads/${file.filename}` : null);
+    } else if (req.file) {
+      imageUrl = req.file.path || (req.file.filename ? `/uploads/${req.file.filename}` : null);
     }
 
     if (!imageUrl) {
-      return res.status(400).json({ success: false, message: 'Package image is required.' });
+      imageUrl = 'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=800&q=80';
     }
 
     const {
@@ -62,12 +65,12 @@ exports.createPackage = async (req, res) => {
     } = req.body;
 
     const newPackage = await Package.create({
-      name,
-      destination,
-      duration,
-      price: Number(price),
+      name: name || 'Custom Tour Package',
+      destination: destination || 'Nagpur & Beyond',
+      duration: duration || '3 Days / 2 Nights',
+      price: Number(price) || 5000,
       discountPrice: discountPrice ? Number(discountPrice) : 0,
-      description,
+      description: description || 'Experience the beauty and spirituality with Mahakali Travels.',
       highlights: Array.isArray(highlights) ? highlights : (highlights ? highlights.split(',').map(s => s.trim()) : []),
       inclusions: Array.isArray(inclusions) ? inclusions : (inclusions ? inclusions.split(',').map(s => s.trim()) : []),
       exclusions: Array.isArray(exclusions) ? exclusions : (exclusions ? exclusions.split(',').map(s => s.trim()) : []),
@@ -95,9 +98,17 @@ exports.updatePackage = async (req, res) => {
 
     let updateData = { ...req.body };
 
-    if (req.file) {
-      updateData.image = req.file.path || `/uploads/${req.file.filename}`;
+    if (req.files && req.files.length > 0) {
+      const file = req.files[0];
+      updateData.image = file.path || (file.filename ? `/uploads/${file.filename}` : null);
+    } else if (req.file) {
+      updateData.image = req.file.path || (req.file.filename ? `/uploads/${req.file.filename}` : null);
+    } else if (req.body.imageUrl || req.body.url) {
+      updateData.image = req.body.imageUrl || req.body.url;
     }
+
+    if (updateData.price) updateData.price = Number(updateData.price);
+    if (updateData.discountPrice) updateData.discountPrice = Number(updateData.discountPrice);
 
     if (updateData.highlights && typeof updateData.highlights === 'string') {
       updateData.highlights = updateData.highlights.split(',').map(s => s.trim());
