@@ -19,16 +19,6 @@ const protect = async (req, res, next) => {
 
     // Attach decoded user info
     req.user = decoded;
-
-    // Check if admin email list check is required
-    const allowedAdmins = (process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,mahakalitravels.9037@gmail.com')
-      .split(',')
-      .map(e => e.trim().toLowerCase());
-
-    if (decoded.email && !allowedAdmins.includes(decoded.email.toLowerCase()) && decoded.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access Denied: Unauthorized admin account.' });
-    }
-
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: 'Invalid or expired authentication token.' });
@@ -36,7 +26,16 @@ const protect = async (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  if (req.user && (req.user.role === 'admin' || req.user.isAdmin)) {
+  const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,gotosarthaks@gmail.com,mahakalitravels.9037@gmail.com,mahakalitravels9037@gmail.com';
+  const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
+
+  const isAdmin = req.user && (
+    req.user.role === 'admin' ||
+    req.user.isAdmin === true ||
+    (req.user.email && allowedAdmins.includes(req.user.email.toLowerCase()))
+  );
+
+  if (isAdmin) {
     next();
   } else {
     return res.status(403).json({ success: false, message: 'Access Denied: Admin privileges required.' });
@@ -44,3 +43,4 @@ const adminOnly = (req, res, next) => {
 };
 
 module.exports = { protect, adminOnly };
+

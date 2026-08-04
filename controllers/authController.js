@@ -6,12 +6,14 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Helper
 const generateToken = (user) => {
+  const isAdmin = user.role === 'admin';
   return jwt.sign(
-    { id: user._id, email: user.email, name: user.name, role: user.role, isAdmin: true },
+    { id: user._id, email: user.email, name: user.name, role: user.role, isAdmin: isAdmin },
     process.env.JWT_SECRET || 'mahakali_super_secret_jwt_key_2026_nagpur',
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
+
 
 // @desc Google OAuth Login
 // @route POST /api/auth/google
@@ -58,36 +60,28 @@ exports.googleAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Google credential token or email is required.' });
     }
 
-    // Check Authorized Admin List
-    const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,mahakalitravels.9037@gmail.com';
+    // Check Authorized Admin Whitelist
+    const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,gotosarthaks@gmail.com,mahakalitravels.9037@gmail.com,mahakalitravels9037@gmail.com';
     const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
 
-    // In development mode or if user email matches allowed admins
-    const isAllowed = allowedAdmins.includes(email.toLowerCase()) || 
-                      process.env.NODE_ENV === 'development' || 
-                      email.includes('admin') ||
-                      email.includes('mahakali');
-
-    if (!isAllowed) {
-      return res.status(403).json({
-        success: false,
-        message: `Access Denied: The email account (${email}) is not authorized to access the Admin Dashboard.`
-      });
-    }
+    const emailLower = email.toLowerCase();
+    const isAdminEmail = allowedAdmins.includes(emailLower);
+    const assignedRole = isAdminEmail ? 'admin' : 'user';
 
     // Upsert user in MongoDB
-    let user = await User.findOne({ email: email.toLowerCase() });
+    let user = await User.findOne({ email: emailLower });
     if (!user) {
       user = await User.create({
         name: name,
-        email: email.toLowerCase(),
+        email: emailLower,
         avatar: picture || 'https://img.icons8.com/color/96/user.png',
         googleId: googleId,
-        role: 'admin'
+        role: assignedRole
       });
     } else {
       user.name = name || user.name;
       if (picture) user.avatar = picture;
+      user.role = assignedRole; // Update role if added to admin list
       await user.save();
     }
 
@@ -96,8 +90,10 @@ exports.googleAuth = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Admin Authentication Successful!',
+      message: isAdminEmail ? 'Admin Authentication Successful!' : 'User Login Successful!',
       token: jwtToken,
+      isAdmin: isAdminEmail,
+      redirectUrl: isAdminEmail ? '/admin.html' : '/',
       user: {
         id: user._id,
         name: user.name,
@@ -112,6 +108,7 @@ exports.googleAuth = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server authentication error: ' + error.message });
   }
 };
+
 
 // @desc Get current admin profile
 // @route GET /api/auth/profile
