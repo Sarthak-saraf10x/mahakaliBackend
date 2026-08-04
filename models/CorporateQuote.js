@@ -49,7 +49,7 @@ const CorporateQuoteSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['New', 'Contacted', 'In Progress', 'Archived'],
+    enum: ['New', 'New Request', 'Contacted', 'Quote Sent', 'In Progress', 'Contract Active', 'Archived'],
     default: 'New'
   }
 });
