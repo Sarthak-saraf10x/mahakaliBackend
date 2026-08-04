@@ -32,7 +32,8 @@ connectDB().then(() => {
 // Security & CORS Middleware
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginResourcePolicy: false
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 }));
 app.use(cors({
   origin: '*', // Allow all cross-origin requests for decoupled frontend
