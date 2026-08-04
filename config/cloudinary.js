@@ -4,12 +4,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configure Cloudinary if credentials exist
-const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
-                               process.env.CLOUDINARY_API_KEY && 
-                               process.env.CLOUDINARY_API_SECRET;
+// Configure Cloudinary if credentials or CLOUDINARY_URL exist
+const hasIndividualKeys = Boolean(process.env.CLOUDINARY_CLOUD_NAME && 
+                            process.env.CLOUDINARY_API_KEY && 
+                            process.env.CLOUDINARY_API_SECRET);
+const isCloudinaryConfigured = hasIndividualKeys || Boolean(process.env.CLOUDINARY_URL);
 
-if (isCloudinaryConfigured) {
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config();
+} else if (hasIndividualKeys) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
