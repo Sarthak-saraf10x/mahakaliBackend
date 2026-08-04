@@ -158,20 +158,21 @@ exports.emailAuth = async (req, res) => {
         user.password = await bcrypt.hash(password, salt);
       }
 
-      // Sync role with admin list
-      user.role = assignedRole;
-      if (name) user.name = name;
-      await user.save();
-    }
+    // Check if user is admin (either via whitelist or database role)
+    const isDbAdmin = user.role === 'admin';
+    const isFinalAdmin = isAdminEmail || isDbAdmin;
+    user.role = isFinalAdmin ? 'admin' : 'user';
+    if (name) user.name = name;
+    await user.save();
 
     const jwtToken = generateToken(user);
 
     return res.status(200).json({
       success: true,
-      message: isAdminEmail ? 'Admin Authentication Successful!' : 'User Login Successful!',
+      message: isFinalAdmin ? 'Admin Authentication Successful!' : 'User Login Successful!',
       token: jwtToken,
-      isAdmin: isAdminEmail,
-      redirectUrl: isAdminEmail ? '/admin.html' : '/',
+      isAdmin: isFinalAdmin,
+      redirectUrl: isFinalAdmin ? '/admin.html' : '/',
       user: {
         id: user._id,
         name: user.name,
