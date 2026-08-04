@@ -29,9 +29,10 @@ exports.createGallery = async (req, res) => {
     // Multiple Files Upload
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const imageUrl = file.path || `/uploads/${file.filename}`;
+        const originalName = file.originalname ? file.originalname.split('.')[0] : 'Mahakali Travel';
+        const imageUrl = file.path || (file.filename ? `/uploads/${file.filename}` : null) || req.body.url || req.body.imageUrl || 'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=800&q=80';
         const item = await Gallery.create({
-          title: title || file.originalname.split('.')[0] || 'Mahakali Travel Capture',
+          title: title || originalName || 'Mahakali Travel Capture',
           category: category || 'General',
           imageUrl: imageUrl,
           publicId: file.filename || file.public_id || ''
@@ -41,9 +42,10 @@ exports.createGallery = async (req, res) => {
     } 
     // Single File Upload
     else if (req.file) {
-      const imageUrl = req.file.path || `/uploads/${req.file.filename}`;
+      const originalName = req.file.originalname ? req.file.originalname.split('.')[0] : 'Mahakali Travel';
+      const imageUrl = req.file.path || (req.file.filename ? `/uploads/${req.file.filename}` : null) || req.body.url || req.body.imageUrl || 'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=800&q=80';
       const item = await Gallery.create({
-        title: title || 'Mahakali Travel Capture',
+        title: title || originalName || 'Mahakali Travel Capture',
         category: category || 'General',
         imageUrl: imageUrl,
         publicId: req.file.filename || req.file.public_id || ''
@@ -51,11 +53,12 @@ exports.createGallery = async (req, res) => {
       savedItems.push(item);
     } 
     // URL Upload Fallback
-    else if (req.body.imageUrl) {
+    else if (req.body.imageUrl || req.body.url) {
+      const url = req.body.imageUrl || req.body.url;
       const item = await Gallery.create({
         title: title || 'Mahakali Travel Capture',
         category: category || 'General',
-        imageUrl: req.body.imageUrl
+        imageUrl: url
       });
       savedItems.push(item);
     } else {

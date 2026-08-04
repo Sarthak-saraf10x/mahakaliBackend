@@ -157,6 +157,7 @@ exports.emailAuth = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
       }
+    }
 
     // Check if user is admin (either via whitelist or database role)
     const isDbAdmin = user.role === 'admin';
