@@ -1,0 +1,93 @@
+const express = require('express');
+const dotenv = require('dotenv');
+const path = require('path');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
+// Load Environment Variables
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/errorHandler');
+const seedData = require('./utils/seed');
+
+// Route Imports
+const authRoutes = require('./routes/authRoutes');
+const packageRoutes = require('./routes/packageRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
+const tourRoutes = require('./routes/tourRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const corporateRoutes = require('./routes/corporateRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+
+const app = express();
+
+// Connect to MongoDB
+connectDB().then(() => {
+  // Auto-seed initial data if empty
+  seedData();
+});
+
+// Security & CORS Middleware
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false
+}));
+app.use(cors({
+  origin: '*', // Allow all cross-origin requests for decoupled frontend
+  credentials: true
+}));
+app.use(morgan('dev'));
+
+// Body Parser Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve Uploaded Files Statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve Frontend Static Files (from ../frontend directory)
+const frontendDir = path.join(__dirname, '../frontend');
+app.use(express.static(frontendDir));
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/packages', packageRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/tours', tourRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/corporate', corporateRoutes);
+app.use('/api/stats', statsRoutes);
+
+// Admin Dashboard Route (/admin)
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'admin.html'));
+});
+
+// Root Health Check Route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Mahakali Tours & Travels API is running smoothly',
+    timestamp: new Date()
+  });
+});
+
+// Serve frontend index.html for any unmatched client routes
+app.get('/{*path}', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+
+
+
+// Global Error Handler
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Mahakali Backend Server running on port ${PORT}`);
+  console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🔗 Admin Dashboard: http://localhost:${PORT}/admin`);
+});

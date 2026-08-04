@@ -1,0 +1,33 @@
+{
+  "name": "mahakali-backend",
+  "version": "1.0.0",
+  "description": "Node.js + Express + MongoDB Backend for Mahakali Tours & Travels",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "seed": "node utils/seed.js"
+  },
+  "keywords": [
+    "express",
+    "mongodb",
+    "mahakali-tours",
+    "corporate-bus",
+    "travel-b2b"
+  ],
+  "author": "Mahakali Dev Team",
+  "license": "ISC",
+  "dependencies": {
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0"
+  }
+}

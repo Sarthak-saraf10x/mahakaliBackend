@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment Secrets
+.env
+.env.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Local Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Operating System Files
+.DS_Store
+Thumbs.db
