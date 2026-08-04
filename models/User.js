@@ -16,14 +16,18 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     lowercase: true
   },
+  password: {
+    type: String
+  },
   avatar: {
     type: String
   },
   role: {
     type: String,
     enum: ['admin', 'user'],
-    default: 'admin'
+    default: 'user'
   },
+
   createdAt: {
     type: Date,
     default: Date.now

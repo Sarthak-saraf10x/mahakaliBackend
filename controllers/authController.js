@@ -1,8 +1,10 @@
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 // Generate JWT Helper
 const generateToken = (user) => {
@@ -108,6 +110,83 @@ exports.googleAuth = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server authentication error: ' + error.message });
   }
 };
+
+
+// @desc Email Login & Auto-Signup
+// @route POST /api/auth/login
+// @access Public
+exports.emailAuth = async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+
+    // Check Whitelist for Admin role
+    const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,gotosarthaks@gmail.com,mahakalitravels.9037@gmail.com,mahakalitravels9037@gmail.com';
+    const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
+    const isAdminEmail = allowedAdmins.includes(emailLower);
+    const assignedRole = isAdminEmail ? 'admin' : 'user';
+
+    let user = await User.findOne({ email: emailLower });
+
+    if (!user) {
+      // Auto Signup if no account exists
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      user = await User.create({
+        name: name || emailLower.split('@')[0],
+        email: emailLower,
+        password: hashedPassword,
+        avatar: 'https://img.icons8.com/color/96/user.png',
+        role: assignedRole
+      });
+    } else {
+      // User exists -> Check password
+      if (user.password) {
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return res.status(401).json({ success: false, message: 'Incorrect password. Please try again.' });
+        }
+      } else {
+        // Set password for user created via OAuth
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+
+      // Sync role with admin list
+      user.role = assignedRole;
+      if (name) user.name = name;
+      await user.save();
+    }
+
+    const jwtToken = generateToken(user);
+
+    return res.status(200).json({
+      success: true,
+      message: isAdminEmail ? 'Admin Authentication Successful!' : 'User Login Successful!',
+      token: jwtToken,
+      isAdmin: isAdminEmail,
+      redirectUrl: isAdminEmail ? '/admin.html' : '/',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Email Auth Error:', error);
+    return res.status(500).json({ success: false, message: 'Authentication error: ' + error.message });
+  }
+};
+
 
 
 // @desc Get current admin profile
