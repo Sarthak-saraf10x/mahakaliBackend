@@ -10,9 +10,12 @@ const {
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
+// Safe upload middleware wrapper
 const safeUpload = (req, res, next) => {
   upload.any()(req, res, (err) => {
-    if (err) console.error('Upload Warning:', err.message);
+    if (err) {
+      console.error('Bus Route Upload Warning:', err.message);
+    }
     next();
   });
 };

@@ -57,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/tours', tourRoutes);
+app.use('/api/bus-routes', require('./routes/busRouteRoutes'));
 app.use('/api/contact', contactRoutes);
 app.use('/api/corporate', corporateRoutes);
 app.use('/api/stats', statsRoutes);
