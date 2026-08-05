@@ -22,8 +22,8 @@ const generateToken = (user) => {
 // @access Public
 exports.googleAuth = async (req, res) => {
   try {
-    const { token, credential, demoEmail, demoName } = req.body;
-    const idToken = credential || token;
+    const { token, credential, idToken: bodyIdToken, demoEmail, demoName } = req.body;
+    const idToken = credential || token || bodyIdToken;
 
     let email, name, picture, googleId;
 
