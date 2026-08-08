@@ -17,10 +17,12 @@ const PackageSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true
+    required: false,
+    default: 0
   },
   discountPrice: {
     type: Number,
+    required: false,
     default: 0
   },
   description: {

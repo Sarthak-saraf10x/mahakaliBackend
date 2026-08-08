@@ -68,7 +68,7 @@ exports.createPackage = async (req, res) => {
       name: name || 'Custom Tour Package',
       destination: destination || 'Nagpur & Beyond',
       duration: duration || '3 Days / 2 Nights',
-      price: Number(price) || 5000,
+      price: price ? Number(price) : 0,
       discountPrice: discountPrice ? Number(discountPrice) : 0,
       description: description || 'Experience the beauty and spirituality with Mahakali Travels.',
       highlights: Array.isArray(highlights) ? highlights : (highlights ? highlights.split(',').map(s => s.trim()) : []),
