@@ -21,6 +21,7 @@ const contactRoutes = require('./routes/contactRoutes');
 const corporateRoutes = require('./routes/corporateRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const vehicleRoutes = require('./routes/vehicleRoutes');
+const settingRoutes = require('./routes/settingRoutes');
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/corporate', corporateRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/settings', settingRoutes);
 
 // Admin Dashboard Route (/admin)
 app.get('/admin', (req, res) => {
