@@ -51,8 +51,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve Uploaded Files Statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve Frontend Static Files (from ../frontend directory)
-const frontendDir = path.join(__dirname, '../frontend');
+// Serve Frontend Static Files (from project root directory)
+const frontendDir = path.join(__dirname, '..');
 app.use(express.static(frontendDir));
 
 // API Routes
