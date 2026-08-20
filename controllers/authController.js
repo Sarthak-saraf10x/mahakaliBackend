@@ -5,6 +5,17 @@ const User = require('../models/User');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Email normalization helper (handles Gmail dot aliases and case sensitivity)
+const normalizeEmail = (email) => {
+  if (!email) return '';
+  let [local, domain] = email.trim().toLowerCase().split('@');
+  if (!domain) return local;
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    local = local.replace(/\./g, '');
+    domain = 'gmail.com';
+  }
+  return `${local}@${domain}`;
+};
 
 // Generate JWT Helper
 const generateToken = (user) => {
@@ -62,28 +73,42 @@ exports.googleAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Google credential token or email is required.' });
     }
 
-    // Check Authorized Admin Whitelist
+    // Check Whitelist for Admin role
     const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,gotosarthaks@gmail.com,mahakalitravels.9037@gmail.com,mahakalitravels9037@gmail.com';
-    const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
+    const allowedAdmins = allowedAdminsStr.split(',').map(e => normalizeEmail(e));
 
     const emailLower = email.toLowerCase();
-    const assignedRole = 'admin';
+    const normUserEmail = normalizeEmail(emailLower);
+
+    let user = await User.findOne({ email: emailLower });
+    const isWhitelisted = allowedAdmins.includes(normUserEmail);
+    const isDbAdmin = user && user.role === 'admin';
+    const isAdmin = isWhitelisted || isDbAdmin;
 
     // Upsert user in MongoDB
-    let user = await User.findOne({ email: emailLower });
     if (!user) {
       user = await User.create({
         name: name,
         email: emailLower,
         avatar: picture || 'https://img.icons8.com/color/96/user.png',
         googleId: googleId,
-        role: assignedRole
+        role: isAdmin ? 'admin' : 'user'
       });
     } else {
       user.name = name || user.name;
       if (picture) user.avatar = picture;
-      user.role = assignedRole;
+      if (isWhitelisted) user.role = 'admin';
       await user.save();
+    }
+
+    // If NOT an admin, return 403 Forbidden
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        isAdmin: false,
+        message: 'Access Denied: Account is not authorized as Admin.',
+        redirectUrl: '/index.html'
+      });
     }
 
     // Generate JWT
@@ -100,7 +125,7 @@ exports.googleAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        role: 'admin'
+        role: user.role
       }
     });
 
@@ -123,12 +148,13 @@ exports.emailAuth = async (req, res) => {
     }
 
     const emailLower = email.trim().toLowerCase();
+    const normUserEmail = normalizeEmail(emailLower);
 
     // Check Whitelist for Admin role
     const allowedAdminsStr = process.env.ADMIN_EMAILS || 'admin@mahakalitours.com,sarthaksaraf10@gmail.com,gotosarthaks@gmail.com,mahakalitravels.9037@gmail.com,mahakalitravels9037@gmail.com';
-    const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
-    const isAdminEmail = allowedAdmins.includes(emailLower);
-    const assignedRole = isAdminEmail ? 'admin' : 'user';
+    const allowedAdmins = allowedAdminsStr.split(',').map(e => normalizeEmail(e));
+
+    const isWhitelisted = allowedAdmins.includes(normUserEmail);
 
     let user = await User.findOne({ email: emailLower });
 
@@ -142,7 +168,7 @@ exports.emailAuth = async (req, res) => {
         email: emailLower,
         password: hashedPassword,
         avatar: 'https://img.icons8.com/color/96/user.png',
-        role: assignedRole
+        role: isWhitelisted ? 'admin' : 'user'
       });
     } else {
       // User exists -> Check password
@@ -156,12 +182,22 @@ exports.emailAuth = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
       }
+      if (isWhitelisted) user.role = 'admin';
+      await user.save();
     }
 
-    // Set role to admin for email authentication
-    user.role = 'admin';
-    if (name) user.name = name;
-    await user.save();
+    const isDbAdmin = user.role === 'admin';
+    const isAdmin = isWhitelisted || isDbAdmin;
+
+    // Reject non-admin users
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        isAdmin: false,
+        message: 'Access Denied: Account is not authorized as Admin.',
+        redirectUrl: '/index.html'
+      });
+    }
 
     const jwtToken = generateToken(user);
 
@@ -176,7 +212,7 @@ exports.emailAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        role: 'admin'
+        role: user.role
       }
     });
 
