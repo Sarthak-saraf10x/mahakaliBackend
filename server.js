@@ -83,7 +83,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve frontend index.html for any unmatched client routes
-app.get('/{*path}', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
@@ -94,7 +94,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Mahakali Backend Server running on port ${PORT}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
   console.log(`🔗 Admin Dashboard: http://localhost:${PORT}/admin`);
