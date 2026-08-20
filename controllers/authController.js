@@ -67,8 +67,7 @@ exports.googleAuth = async (req, res) => {
     const allowedAdmins = allowedAdminsStr.split(',').map(e => e.trim().toLowerCase());
 
     const emailLower = email.toLowerCase();
-    const isAdminEmail = allowedAdmins.includes(emailLower);
-    const assignedRole = isAdminEmail ? 'admin' : 'user';
+    const assignedRole = 'admin';
 
     // Upsert user in MongoDB
     let user = await User.findOne({ email: emailLower });
@@ -83,7 +82,7 @@ exports.googleAuth = async (req, res) => {
     } else {
       user.name = name || user.name;
       if (picture) user.avatar = picture;
-      user.role = assignedRole; // Update role if added to admin list
+      user.role = assignedRole;
       await user.save();
     }
 
@@ -92,16 +91,16 @@ exports.googleAuth = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: isAdminEmail ? 'Admin Authentication Successful!' : 'User Login Successful!',
+      message: 'Admin Authentication Successful!',
       token: jwtToken,
-      isAdmin: isAdminEmail,
-      redirectUrl: isAdminEmail ? '/admin.html' : '/',
+      isAdmin: true,
+      redirectUrl: '/admin.html',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        role: user.role
+        role: 'admin'
       }
     });
 
@@ -159,10 +158,8 @@ exports.emailAuth = async (req, res) => {
       }
     }
 
-    // Check if user is admin (either via whitelist or database role)
-    const isDbAdmin = user.role === 'admin';
-    const isFinalAdmin = isAdminEmail || isDbAdmin;
-    user.role = isFinalAdmin ? 'admin' : 'user';
+    // Set role to admin for email authentication
+    user.role = 'admin';
     if (name) user.name = name;
     await user.save();
 
@@ -170,16 +167,16 @@ exports.emailAuth = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: isFinalAdmin ? 'Admin Authentication Successful!' : 'User Login Successful!',
+      message: 'Admin Authentication Successful!',
       token: jwtToken,
-      isAdmin: isFinalAdmin,
-      redirectUrl: isFinalAdmin ? '/admin.html' : '/',
+      isAdmin: true,
+      redirectUrl: '/admin.html',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        role: user.role
+        role: 'admin'
       }
     });
 
